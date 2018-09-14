@@ -15,9 +15,12 @@ import fastparquet
 # => ideal
 # d6tpipe._('citynorman-augvest-2018-pt2').files.get({'include':'wern*.pq'}).download('data/financials')
 
-import urllib
-urllib.request.urlretrieve('https://s3-us-west-2.amazonaws.com/datasci-finance/data/wern-act-raw.pq', 'data/financials/wern-act-raw.pq')
-urllib.request.urlretrieve('https://s3-us-west-2.amazonaws.com/datasci-finance/data/wern-est-raw.pq', 'data/financials/wern-est-raw.pq')
+import os
+fnames=['data/financials/wern-act-raw.pq','data/financials/wern-est-raw.pq']
+if not all([os.path.exists(f) for f in fnames]):
+    import urllib
+    urllib.request.urlretrieve('https://s3-us-west-2.amazonaws.com/datasci-finance/data/wern-act-raw.pq', 'data/financials/wern-act-raw.pq')
+    urllib.request.urlretrieve('https://s3-us-west-2.amazonaws.com/datasci-finance/data/wern-est-raw.pq', 'data/financials/wern-est-raw.pq')
 
 df_act = fastparquet.ParquetFile('data/financials/wern-act-raw.pq').to_pandas()
 
