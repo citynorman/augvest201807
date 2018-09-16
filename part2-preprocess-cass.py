@@ -108,20 +108,25 @@ print(f1_score(df_est_announce['is_beat'],df_est_announce['is_beat_pred']))
 pd.crosstab(df_est_announce['is_beat'],df_est_announce['is_beat_pred'])
 
 # out-sample
-def run_ols(dftrain,dftest):
-    if dftrain.shape[0]<4: return np.nan
-    m = sklearn.linear_model.LinearRegression()
-    r = m.fit(dftrain[['FRGEXPUSM649NCIS']], dftrain['rev_yoy'])
-    return m.predict(dftest['FRGEXPUSM649NCIS'])[0]
-    
-df_pred_ols = []
-for iper in range(0,df_est_announce.shape[0]):
-    dftrain = df_est_announce.iloc[0:iper-1,:]
-    dftest = df_est_announce.iloc[iper,:]
-    pred = run_ols(dftrain,dftest)
-    df_pred_ols.append(pred)
+def run_outsample(dfg, m, Xcol, ycol):
+    def predfun(dftrain,dftest):
+        if dftrain.shape[0]<4: return np.nan
+        r = m.fit(dftrain[Xcol], dftrain[ycol])
+        if len(Xcol)==1:
+            return m.predict(pd.DataFrame(dftest[Xcol]))[0]
+        else:
+            return m.predict(dftest[Xcol])[0]
+        
+    df_pred_ols = []
+    for iper in range(0,df_est_announce.shape[0]):
+        dftrain = df_est_announce.iloc[0:iper-1,:]
+        dftest = df_est_announce.iloc[iper,:]
+        pred = predfun(dftrain,dftest)
+        df_pred_ols.append(pred)
+    return df_pred_ols
 
-df_est_announce['rev_yoy_pred_os'] = df_pred_ols
+mols = sklearn.linear_model.LinearRegression()
+df_est_announce['rev_yoy_pred_os'] = run_outsample(df_est_announce, mols, ['FRGEXPUSM649NCIS'], 'rev_yoy')
 
 df_est_announce[['rev_yoy','rev_yoy_est','rev_yoy_pred_os','rev_yoy_pred_ins', 'FRGEXPUSM649NCIS']].corr()
 df_est_announce['is_beat_pred'] = df_est_announce['rev_yoy_pred_os']>df_est_announce['rev_yoy_est']
@@ -135,4 +140,14 @@ from sklearn.model_selection import cross_validate
 -cross_validate(sklearn.linear_model.LinearRegression(), df_est_announce[['FRGEXPUSM649NCIS']].values, df_est_announce['rev_yoy'].values, return_train_score=False, scoring=('r2', 'neg_mean_squared_error'), cv=10)['test_neg_mean_squared_error'].mean()
 -cross_validate(sklearn.linear_model.LinearRegression(), df_est_announce[['FRGSHPUSM649NCIS', 'FRGEXPUSM649NCIS']].values, df_est_announce['rev_yoy'].values, return_train_score=False, scoring=('r2', 'neg_mean_squared_error'), cv=10)['test_neg_mean_squared_error'].mean()
 
-# todo: try yipit data
+# other models
+from sklearn.ensemble import AdaBoostRegressor
+-cross_validate(AdaBoostRegressor(), df_est_announce[['FRGEXPUSM649NCIS']].values, df_est_announce['rev_yoy'].values, return_train_score=False, scoring=('r2', 'neg_mean_squared_error'), cv=10)['test_neg_mean_squared_error'].mean()
+-cross_validate(AdaBoostRegressor(), df_est_announce[['FRGSHPUSM649NCIS', 'FRGEXPUSM649NCIS']].values, df_est_announce['rev_yoy'].values, return_train_score=False, scoring=('r2', 'neg_mean_squared_error'), cv=10)['test_neg_mean_squared_error'].mean()
+
+df_est_announce['rev_yoy_predml_os'] = run_outsample(df_est_announce, AdaBoostRegressor(random_state=0), ['FRGSHPUSM649NCIS', 'FRGEXPUSM649NCIS'], 'rev_yoy')
+df_est_announce['is_beat_predml'] = df_est_announce['rev_yoy_predml_os']>df_est_announce['rev_yoy_est']
+print(f1_score(df_est_announce['is_beat_predml'],df_est_announce['is_beat_pred']))
+
+
+# cross validate training?

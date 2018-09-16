@@ -38,4 +38,3 @@ df_est['rev_isbeat'] = df_est['rev_yoy']>df_est['rev_yoy_est']
 df_est[['rev_yoy_est','rev_yoy']].corr()
 (df_est['rev_yoy']-df_est['rev_yoy_est']).abs().median()
 
-df_pred = df_est[[]]
